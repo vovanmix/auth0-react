@@ -82,6 +82,10 @@ export interface Auth0ContextInterface extends AuthState {
     config?: PopupConfigOptions
   ) => Promise<string>;
 
+  reLoginWithRedirectForAccessToken: (
+    options?: GetTokenWithPopupOptions
+  ) => Promise<void>;
+
   /**
    * ```js
    * const claims = await getIdTokenClaims();
@@ -174,6 +178,7 @@ const initialContext = {
   buildLogoutUrl: stub,
   getAccessTokenSilently: stub,
   getAccessTokenWithPopup: stub,
+  reLoginWithRedirectForAccessToken: stub,
   getIdTokenClaims: stub,
   loginWithRedirect: stub,
   loginWithPopup: stub,

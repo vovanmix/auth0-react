@@ -17,6 +17,9 @@ import Auth0Context, { RedirectLoginOptions } from './auth0-context';
 import { hasAuthParams, loginError, tokenError } from './utils';
 import { reducer } from './reducer';
 import { initialAuthState } from './auth-state';
+import { authorize } from './Auth0CordovaFork';
+import { getUniqueScopes } from '@auth0/auth0-spa-js/src/scope';
+import { DEFAULT_SCOPE } from '@auth0/auth0-spa-js/dist/typings/constants';
 
 /**
  * The state of the application before the user was redirected to the login page.
@@ -140,7 +143,7 @@ export interface Auth0ProviderOptions {
  * Replaced by the package version at build time.
  * @ignore
  */
-declare const __VERSION__: string;
+const __VERSION__ = '1.3.0';
 
 /**
  * @ignore
@@ -224,6 +227,7 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
         const user = await client.getUser();
         dispatch({ type: 'INITIALISED', user });
       } catch (error) {
+        console.log({ error: error.toString() });
         dispatch({ type: 'ERROR', error: loginError(error) });
       }
     })();
@@ -241,8 +245,13 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
   );
 
   const loginWithRedirect = useCallback(
-    (opts?: RedirectLoginOptions): Promise<void> =>
-      client.loginWithRedirect(toAuth0LoginRedirectOptions(opts)),
+    async (opts?: RedirectLoginOptions): Promise<void> => {
+      const url = await client.buildAuthorizeUrl(toAuth0LoginRedirectOptions(opts));
+      authorize(url, (error: any, ok: any) => {
+        console.log({ error, ok });
+      });
+    },
+    // client.loginWithRedirect(toAuth0LoginRedirectOptions(opts)),
     [client]
   );
 
@@ -293,6 +302,32 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
     [client, userUpdatedAt]
   );
 
+  const reLoginWithRedirectForAccessToken = useCallback(
+    async (opts?: GetTokenWithPopupOptions): Promise<void> => {
+      // let token;
+      try {
+        // token = await client.getTokenWithPopup(opts, config);
+        const options = { ...opts };
+        options.audience = opts?.audience || clientOpts.audience;
+
+        options.scope = getUniqueScopes(
+          DEFAULT_SCOPE,
+          options.scope || clientOpts.scope || DEFAULT_SCOPE
+        );
+
+        await loginWithRedirect(options);
+      } catch (error) {
+        throw tokenError(error);
+      }
+      // const user = await client.getUser();
+      // if (user?.updated_at !== userUpdatedAt) {
+      //   dispatch({ type: 'USER_UPDATED', user });
+      // }
+      // return token;
+    },
+    [clientOpts, loginWithRedirect]
+  );
+
   const getAccessTokenWithPopup = useCallback(
     async (
       opts?: GetTokenWithPopupOptions,
@@ -330,6 +365,7 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
         getIdTokenClaims,
         loginWithRedirect,
         loginWithPopup,
+        reLoginWithRedirectForAccessToken,
         logout,
       }}
     >
