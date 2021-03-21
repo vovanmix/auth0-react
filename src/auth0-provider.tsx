@@ -133,6 +133,10 @@ export interface Auth0ProviderOptions {
    */
   audience?: string;
   /**
+   * If it's native capacitor/cordova app (iOS/Android), it will use IAB to log in
+   */
+  isNative: boolean;
+  /**
    * If you need to send custom parameters to the Authorization Server,
    * make sure to use the original parameter name.
    */
@@ -244,15 +248,27 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
     [client]
   );
 
-  const loginWithRedirect = useCallback(
-    async (opts?: RedirectLoginOptions): Promise<void> => {
-      const url = await client.buildAuthorizeUrl(toAuth0LoginRedirectOptions(opts));
+  const nativeLogIn = useCallback(
+    async (options?: RedirectLoginOptions): Promise<void> => {
+      const url = await client.buildAuthorizeUrl(
+        toAuth0LoginRedirectOptions(options)
+      );
       authorize(url, (error: any, ok: any) => {
         console.log({ error, ok });
       });
     },
-    // client.loginWithRedirect(toAuth0LoginRedirectOptions(opts)),
     [client]
+  );
+
+  const loginWithRedirect = useCallback(
+    async (options?: RedirectLoginOptions): Promise<void> => {
+      if (clientOpts.isNative) {
+        await nativeLogIn(options);
+      } else {
+        await client.loginWithRedirect(toAuth0LoginRedirectOptions(options));
+      }
+    },
+    [nativeLogIn, clientOpts.isNative, client]
   );
 
   const loginWithPopup = useCallback(
@@ -260,17 +276,21 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
       options?: PopupLoginOptions,
       config?: PopupConfigOptions
     ): Promise<void> => {
-      dispatch({ type: 'LOGIN_POPUP_STARTED' });
-      try {
-        await client.loginWithPopup(options, config);
-      } catch (error) {
-        dispatch({ type: 'ERROR', error: loginError(error) });
-        return;
+      if (clientOpts.isNative) {
+        await nativeLogIn(options);
+      } else {
+        dispatch({ type: 'LOGIN_POPUP_STARTED' });
+        try {
+          await client.loginWithPopup(options, config);
+        } catch (error) {
+          dispatch({ type: 'ERROR', error: loginError(error) });
+          return;
+        }
+        const user = await client.getUser();
+        dispatch({ type: 'LOGIN_POPUP_COMPLETE', user });
       }
-      const user = await client.getUser();
-      dispatch({ type: 'LOGIN_POPUP_COMPLETE', user });
     },
-    [client]
+    [nativeLogIn, client, clientOpts.isNative]
   );
 
   const logout = useCallback(
@@ -302,32 +322,6 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
     [client, userUpdatedAt]
   );
 
-  const reLoginWithRedirectForAccessToken = useCallback(
-    async (opts?: GetTokenWithPopupOptions): Promise<void> => {
-      // let token;
-      try {
-        // token = await client.getTokenWithPopup(opts, config);
-        const options = { ...opts };
-        options.audience = opts?.audience || clientOpts.audience;
-
-        options.scope = getUniqueScopes(
-          DEFAULT_SCOPE,
-          options.scope || clientOpts.scope || DEFAULT_SCOPE
-        );
-
-        await loginWithRedirect(options);
-      } catch (error) {
-        throw tokenError(error);
-      }
-      // const user = await client.getUser();
-      // if (user?.updated_at !== userUpdatedAt) {
-      //   dispatch({ type: 'USER_UPDATED', user });
-      // }
-      // return token;
-    },
-    [clientOpts, loginWithRedirect]
-  );
-
   const getAccessTokenWithPopup = useCallback(
     async (
       opts?: GetTokenWithPopupOptions,
@@ -348,6 +342,29 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
     [client, userUpdatedAt]
   );
 
+  const tryGetAccessTokenWithPopupOrReLogin = useCallback(
+    async (opts?: GetTokenWithPopupOptions): Promise<string | null> => {
+      if (!clientOpts.isNative) {
+        return getAccessTokenWithPopup(opts);
+      }
+      try {
+        const options = { ...opts };
+        options.audience = opts?.audience || clientOpts.audience;
+
+        options.scope = getUniqueScopes(
+          DEFAULT_SCOPE,
+          options.scope || clientOpts.scope || DEFAULT_SCOPE
+        );
+
+        await nativeLogIn(options);
+        return null;
+      } catch (error) {
+        throw tokenError(error);
+      }
+    },
+    [clientOpts, nativeLogIn, getAccessTokenWithPopup]
+  );
+
   const getIdTokenClaims = useCallback(
     (opts?: GetIdTokenClaimsOptions): Promise<IdToken> =>
       client.getIdTokenClaims(opts),
@@ -365,7 +382,7 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
         getIdTokenClaims,
         loginWithRedirect,
         loginWithPopup,
-        reLoginWithRedirectForAccessToken,
+        tryGetAccessTokenWithPopupOrReLogin,
         logout,
       }}
     >

@@ -82,9 +82,13 @@ export interface Auth0ContextInterface extends AuthState {
     config?: PopupConfigOptions
   ) => Promise<string>;
 
-  reLoginWithRedirectForAccessToken: (
+  /**
+   * Returns token for non-native environments, and for native
+   * starts log in with IAB, that will result in page reload, and returns null
+   */
+  tryGetAccessTokenWithPopupOrReLogin: (
     options?: GetTokenWithPopupOptions
-  ) => Promise<void>;
+  ) => Promise<string | null>;
 
   /**
    * ```js
@@ -178,7 +182,7 @@ const initialContext = {
   buildLogoutUrl: stub,
   getAccessTokenSilently: stub,
   getAccessTokenWithPopup: stub,
-  reLoginWithRedirectForAccessToken: stub,
+  tryGetAccessTokenWithPopupOrReLogin: stub,
   getIdTokenClaims: stub,
   loginWithRedirect: stub,
   loginWithPopup: stub,
