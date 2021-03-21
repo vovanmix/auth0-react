@@ -61,9 +61,7 @@ export interface Auth0ContextInterface extends AuthState {
    * Note that in all cases, falling back to an iframe requires access to
    * the `auth0` cookie.
    */
-  getAccessTokenSilently: (
-    options?: GetTokenSilentlyOptions
-  ) => Promise<string>;
+  getAccessTokenSilently: (options?: GetTokenSilentlyOptions) => Promise<string>;
 
   /**
    * ```js

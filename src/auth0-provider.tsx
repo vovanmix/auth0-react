@@ -152,9 +152,7 @@ const __VERSION__ = '1.3.0';
 /**
  * @ignore
  */
-const toAuth0ClientOptions = (
-  opts: Auth0ProviderOptions
-): Auth0ClientOptions => {
+const toAuth0ClientOptions = (opts: Auth0ProviderOptions): Auth0ClientOptions => {
   const { clientId, redirectUri, maxAge, ...validOpts } = opts;
   return {
     ...validOpts,
@@ -214,9 +212,7 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
     onRedirectCallback = defaultOnRedirectCallback,
     ...clientOpts
   } = opts;
-  const [client] = useState(
-    () => new Auth0Client(toAuth0ClientOptions(clientOpts))
-  );
+  const [client] = useState(() => new Auth0Client(toAuth0ClientOptions(clientOpts)));
   const [state, dispatch] = useReducer(reducer, initialAuthState);
 
   useEffect(() => {

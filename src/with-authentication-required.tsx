@@ -70,6 +70,7 @@ export interface WithAuthenticationRequiredOptions {
  * When you wrap your components in this Higher Order Component and an anonymous user visits your component
  * they will be redirected to the login page and returned to the page they we're redirected from after login.
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 const withAuthenticationRequired = <P extends object>(
   Component: ComponentType<P>,
   options: WithAuthenticationRequiredOptions = {}
@@ -100,6 +101,6 @@ const withAuthenticationRequired = <P extends object>(
 
     return isAuthenticated ? <Component {...props} /> : onRedirecting();
   };
-}
+};
 
 export default withAuthenticationRequired;
