@@ -18,8 +18,14 @@ import { hasAuthParams, loginError, tokenError } from './utils';
 import { reducer } from './reducer';
 import { initialAuthState } from './auth-state';
 import { authorize } from './Auth0CordovaFork';
-import { getUniqueScopes } from '@auth0/auth0-spa-js/src/scope';
-import { DEFAULT_SCOPE } from '@auth0/auth0-spa-js/dist/typings/constants';
+
+const DEFAULT_SCOPE = 'openid profile email';
+
+// cloned from @auth0/auth0-spa-js
+const dedupe = (arr: string[]) => Array.from(new Set(arr));
+const getUniqueScopes = (...scopes: string[]) => {
+  return dedupe(scopes.join(' ').trim().split(/\s+/)).join(' ');
+};
 
 /**
  * The state of the application before the user was redirected to the login page.

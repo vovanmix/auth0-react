@@ -6,7 +6,6 @@ var closingDelayMs = 1000;
 
 session.clean();
 
-
 /**
  * @callback authorizeCallback
  * @param {Error} [err] error returned by Auth0 with the reason of the Auth failure
