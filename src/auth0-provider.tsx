@@ -285,6 +285,7 @@ const Auth0Provider = (opts: Auth0ProviderOptions): JSX.Element => {
         try {
           await client.loginWithPopup(options, config);
         } catch (error) {
+          console.error({ error });
           dispatch({ type: 'ERROR', error: loginError(error) });
           return;
         }

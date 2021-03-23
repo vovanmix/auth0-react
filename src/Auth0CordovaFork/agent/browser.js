@@ -5,6 +5,9 @@ function Browser() {
 }
 
 Browser.isAvailable = function (callback) {
+  if (!window.SafariViewController) {
+    callback(false);
+  }
   window.SafariViewController.isAvailable(callback);
 };
 

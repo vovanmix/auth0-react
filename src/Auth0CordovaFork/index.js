@@ -38,6 +38,7 @@ export const authorize = function (url, callback) {
 
   getAgent(function (err, agent) {
     if (err) {
+      console.error('get agent error', err);
       return callback(err);
     }
 
@@ -104,6 +105,7 @@ export const authorize = function (url, callback) {
     agent.open(url, function (error, result) {
       if (error != null) {
         session.clean();
+        console.error('agent open error', error);
         return callback(error);
       }
 
